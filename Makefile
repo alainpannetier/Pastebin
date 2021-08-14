@@ -24,6 +24,7 @@ install:
 	go get github.com/lib/pq
 	go get golang.org/x/crypto/bcrypt
 	go get github.com/gorilla/securecookie
+	go get github.com/gorilla/handlers
 
 test: install
 	go install $(GOFLAGS) ./...
