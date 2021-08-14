@@ -29,6 +29,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	// For url routing
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	// securecookie for cookie handling
 	"github.com/gorilla/securecookie"
@@ -64,7 +65,7 @@ type Response struct {
 	Extra  string `json:"extra"`  // Extra output from the highlight-wrapper
 	Id     string `json:"id"`     // The id of the paste
 	Lang   string `json:"lang"`   // Specified language
-	Paste  string `json:"paste"`  // The eactual paste data
+	Paste  string `json:"paste"`  // The actual paste data
 	Sha1   string `json:"sha1"`   // The sha1 of the paste
 	Size   int    `json:"size"`   // The length of the paste
 	Status string `json:"status"` // A custom status message
@@ -79,10 +80,10 @@ type Request struct {
 	Expiry  int64  `json:"expiry,string"` // An expiry date
 	Id      string `json:"id"`            // The id of the paste
 	Lang    string `json:"lang"`          // The language of the paste
-	Paste   string `json:"paste"`         // The actual pase
+	Paste   string `json:"paste"`         // The actual paste
 	Style   string `json:"style"`         // The style of the paste
 	Title   string `json:"title"`         // The title of the paste
-	UserKey string `json:"key"`           // The title of the paste
+	UserKey string `json:"userkey"`       // The title of the paste
 	WebReq  bool   `json:"webreq"`        // If its a webrequest or not
 }
 
@@ -152,7 +153,7 @@ func checkErr(err error) {
 	}
 }
 
-// getSupportedStyless reads supported styles from the highlighter-wrapper
+// getSupportedStyles reads supported styles from the highlighter-wrapper
 // (which in turn gets available styles from pygments). It then puts them into
 // an array which is used by the html-template. The function doesn't return
 // anything since the array is defined globally (shrug).
@@ -244,7 +245,7 @@ func printHelp(err int) {
 
 	fmt.Printf("\n Description, \n")
 	fmt.Printf("    - This is a small (< 600 line of go) pastebing with")
-	fmt.Printf(" support for syntax highlightnig (trough python-pygments).\n")
+	fmt.Printf(" support for syntax highlightnig (through python-pygments).\n")
 	fmt.Printf("      No more no less.\n\n")
 
 	fmt.Printf(" Usage, \n")
@@ -382,7 +383,7 @@ func shaPaste(paste string) string {
 // Takes the arguments,
 // title, title of the paste as string,
 // paste, the actual paste data as a string,
-// expiry, the epxpiry date in epoch time as an int64
+// expiry, the expiry date in epoch time as an int64
 // Returns the Response struct
 func savePaste(title string, paste string, expiry int64, user_key string) Response {
 
@@ -444,7 +445,7 @@ func savePaste(title string, paste string, expiry int64, user_key string) Respon
 	}
 	dbQuery = dbQuery[:len(dbQuery)-1]
 
-	stmt, err := dbHandle.Prepare("INSERT INTO " + configuration.DBTable + " (id,title,hash,data,delkey,expiry,userid)values(" + dbQuery + ")")
+	stmt, err := dbHandle.Prepare("INSERT INTO " + configuration.DBTable + " (id, title, hash, data, delkey, expiry, userid)values(" + dbQuery + ")")
 	checkErr(err)
 
 	_, err = stmt.Exec(id, title, sha, paste, delKey, expiry, user_key)
@@ -511,7 +512,7 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 
 	var inData Request
 
-	loggy(fmt.Sprintf("Recieving request to save new paste, trying to parse indata."))
+	loggy(fmt.Sprintf("Receiving request to save new paste, trying to parse indata."))
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&inData)
 
@@ -969,7 +970,7 @@ func getUserKey(r *http.Request) string {
 	email := cookieValue["email"]
 	// Query database if id exists and if it does call generateName again
 	var user_key string
-	err = dbHandle.QueryRow("select key from "+configuration.DBAccountsTable+
+	err = dbHandle.QueryRow("select acckey from "+configuration.DBAccountsTable+
 		" where email="+configuration.DBPlaceHolder[0], email).
 		Scan(&user_key)
 
@@ -999,8 +1000,8 @@ func generateKey() string {
 
 	// Query database if id exists and if it does call generateName again
 	var key_taken string
-	err := dbHandle.QueryRow("select key from "+configuration.DBAccountsTable+
-		" where key="+configuration.DBPlaceHolder[0], key).
+	err := dbHandle.QueryRow("select acckey from "+configuration.DBAccountsTable+
+		" where acckey="+configuration.DBPlaceHolder[0], key).
 		Scan(&key_taken)
 
 	switch {
@@ -1057,7 +1058,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		dbQuery = dbQuery[:len(dbQuery)-1]
 
-		stmt, err := dbHandle.Prepare("INSERT into " + configuration.DBAccountsTable + "(email, password, key) values(" + dbQuery + ")")
+		stmt, err := dbHandle.Prepare("INSERT into " + configuration.DBAccountsTable + "(email, password, acckey) values(" + dbQuery + ")")
 		checkErr(err)
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
@@ -1172,14 +1173,31 @@ func main() {
 	router.HandleFunc("/download/{pasteId}", DownloadHandler).Methods("GET")
 	router.HandleFunc("/assets/pastebin.css", serveCss).Methods("GET")
 
-	// Set up server,
-	srv := &http.Server{
-		Handler:      router,
-		Addr:         configuration.ListenAddress + ":" + configuration.ListenPort,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
+	headers := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization", "Access-Control-Allow-Origin"})
+	methods := handlers.AllowedMethods([]string{"GET", "CONNECT", "PATCH", "HEAD", "PUT", "POST", "DELETE", "OPTIONS", "TRACE"})
+	origins := handlers.AllowedOrigins([]string{"*"})
 
-	err = srv.ListenAndServe()
+	err = http.ListenAndServe(
+		configuration.ListenAddress+":"+configuration.ListenPort,
+		handlers.CORS(headers, methods, origins)(router))
 	checkErr(err)
+
+	//c := cors.New(cors.Options{
+	//	AllowedOrigins:   []string{"*"},
+	//	AllowCredentials: true,
+	//	AllowedHeaders:   []string{"X-Requested-With", "Content-Type", "Authorization", "Access-Control-Allow-Origin"},
+	//
+	//})
+
+	//handler := c.Handler(router)
+
+	// Set up server,
+	//srv := &http.Server{
+	//	Handler:      handler,
+	//	Addr:         configuration.ListenAddress + ":" + configuration.ListenPort,
+	//	WriteTimeout: 15 * time.Second,
+	//	ReadTimeout:  15 * time.Second,
+	//}
+	//
+	// err = srv.ListenAndServe()
 }
