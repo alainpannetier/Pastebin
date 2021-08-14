@@ -1,6 +1,17 @@
+Fork from [ewhal/Pastebin](https://github.com/ewhal/Pastebin)
+
+I was interested in this slim Pastebin version.
+But the code was a bit outdated and had a lot of inconsistencies.
+So, rather than submit a lot of update requests, I preferred to clone, correct, and commit.
+
+Hopefully this will work better OOTB.
+
+Original Readme.md starts here.
+
 # Golang Pastebin
 [![Build Status](https://travis-ci.org/ewhal/Pastebin.svg?branch=master)](https://travis-ci.org/ewhal/Pastebin) [![GoDoc](https://godoc.org/github.com/ewhal/Pastebin?status.svg)](https://godoc.org/github.com/ewhal/Pastebin) [![Go Report Card](https://goreportcard.com/badge/github.com/ewhal/Pastebin)](https://goreportcard.com/report/github.com/ewhal/Pastebin) [![MIT
 licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/ewhal/Pastebin/master/LICENSE.md)
+
 
 Modern self-hosted pastebin service with a restful API.
 
