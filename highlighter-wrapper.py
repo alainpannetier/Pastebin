@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 try:
     import pygments
@@ -9,6 +9,7 @@ from pygments import highlight
 from pygments.lexers import get_lexer_by_name, guess_lexer
 from pygments.formatters import HtmlFormatter
 import sys
+
 
 def render(code, lang, theme):
 
@@ -40,12 +41,11 @@ def render(code, lang, theme):
         out = "Successfully used lexer for given language :: "+lang
 
     try:
-        html_format = HtmlFormatter(style=theme, noclasses="true", linenos="true", encoding="utf-8")
+        html_format = HtmlFormatter(style=theme, noclasses="true", linenos="true", encoding="utf-8", lineseparator="<br>", tabsize=4)
     except:
         html_format = HtmlFormatter(noclasses="true", linenos="true", encoding="utf-8")
 
     return highlight(code, lexer, html_format),out
-
 
 
 def usage(err=0):
@@ -66,16 +66,19 @@ def usage(err=0):
 
     sys.exit(err)
 
+
 def get_styles():
     item = pygments.styles.get_all_styles()
     for items in item:
         print(items)
     sys.exit(0)
 
+
 def get_lexers():
-    item = pygments.lexers.get_all_lexers()
-    for items in item:
-        print(items[0]+";"+items[1][0])
+    items = pygments.lexers.get_all_lexers()
+    for item in items:
+        if len(item[1]) > 0:
+            print(item[0]+";"+item[1][0])
     sys.exit(0)
 
 
