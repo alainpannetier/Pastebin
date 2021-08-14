@@ -12,6 +12,6 @@ CREATE TABLE `pastebin` (
 CREATE TABLE `accounts` (
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `key` varchar(255) NOT NULL,
-  PRIMARY KEY (`key`)
+  `acckey` varchar(255) NOT NULL,
+  PRIMARY KEY (`acckey`)
 );
